@@ -10,8 +10,6 @@ RUN apt-get update && apt-get install -y \
 # Set work directory
 WORKDIR /app
 
-# Copy your project files
-COPY src/ /app
 
 # Install Python dependencies
 RUN pip install flask
