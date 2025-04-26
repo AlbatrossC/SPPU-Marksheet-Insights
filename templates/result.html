@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en" id="top">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Performance Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif; /* Switched to Inter for a cleaner look */
+            background-color: #f1f5f9; /* bg-slate-100 */
+        }
+        .card-hover {
+            transition: all 0.3s ease-in-out;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+        }
+        /* Print Styles */
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+                background-color: white !important;
+                font-family: 'Inter', sans-serif; /* Ensure font consistency */
+                color: black !important; /* Ensure text is black */
+                 -webkit-print-color-adjust: exact !important; /* Force background colors for highlights in Chrome/Safari */
+                 print-color-adjust: exact !important; /* Standard */
+            }
+            .no-print, .no-print * {
+                display: none !important;
+            }
+            .print-container {
+                padding: 15px !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .print-card {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0; /* Add subtle border for print */
+                padding: 15px !important;
+                 page-break-inside: avoid; /* Try to keep cards from splitting */
+            }
+            .card-hover {
+                 transform: none !important;
+                 box-shadow: none !important;
+            }
+            table {
+                page-break-inside: avoid;
+                font-size: 9pt !important;
+                width: 100% !important;
+            }
+            th, td {
+                 padding: 4px 8px !important;
+                 border: 1px solid #cbd5e1; /* Add borders to table cells for print clarity */
+            }
+            thead {
+                display: table-header-group; /* Ensure header repeats on new pages */
+            }
+            thead tr {
+                background-color: #e2e8f0 !important; /* Light gray background for header */
+            }
+            tbody tr:nth-child(even) {
+                 background-color: #f8fafc !important; /* Lighter alternating row */
+            }
+            /* Ensure status background colors print */
+            .print-bg-red { background-color: #fee2e2 !important; color: #991b1b !important; }
+            .print-bg-green { background-color: #dcfce7 !important; color: #166534 !important; }
+            .print-bg-yellow { background-color: #fef9c3 !important; color: #854d0e !important; }
+            .print-bg-blue { background-color: #dbeafe !important; color: #1e40af !important; }
+            .print-border-dotted { border-style: dotted !important; }
+
+            h1, h2, h3 {
+                 margin-bottom: 0.5rem !important;
+                 page-break-after: avoid;
+            }
+            a[href]:after {
+                content: none !important; /* Don't show URLs after links */
+            }
+             p, ul {
+                 page-break-inside: avoid;
+             }
+        }
+
+        /* Floating Print Button Style */
+        .print-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 100;
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            border-radius: 50%;
+            width: 56px; /* Slightly smaller */
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .print-btn:hover {
+            background-color: #4338ca; /* Darker Indigo */
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 print-container">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-slate-900">
+            Academic Performance Analysis
+        </h1>
+
+        <!-- Top Action Buttons -->
+        <div class="flex flex-wrap justify-center items-center gap-3 sm:gap-4 no-print mb-10">
+            <a id="downloadJsonButton" href="{{ url_for('processed.download_json') }}"
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition duration-150 ease-in-out">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Export JSON
+            </a>
+            <a id="downloadXlsxButton" href="{{ url_for('processed.download_excel') }}"
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-400 transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Export XLSX
+            </a>
+            <a id="uploadAnotherButtonTop" href="{{ url_for('upload_file') }}"
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                Process Another
+            </a>
+            <button id="printButtonTop" onclick="window.print();"
+                    class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md shadow-sm text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                Print Results
+            </button>
+        </div>
+
+        <!-- Performance Summary Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-10">
+            <!-- Overall Performance Card -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">Overall Performance</h2>
+                    <div class="space-y-4">
+                        {% set sem1_info = data.basic_info[0] if data.basic_info and data.basic_info|length > 0 else None %}
+                        {% set sem2_info = data.basic_info[1] if data.basic_info and data.basic_info|length > 1 else None %}
+
+                        {% if sem1_info %}
+                        <div class="p-4 rounded-lg {% if sem1_info.class_awarded == 'Failed' %} bg-red-50 text-red-700 print-bg-red {% else %} bg-blue-50 text-blue-700 print-bg-blue {% endif %}">
+                            <p class="font-semibold text-sm uppercase tracking-wide">{{ sem1_info.semester }}</p>
+                            <p class="mt-1">Status:
+                                <span class="font-bold {% if sem1_info.class_awarded == 'Failed' %}text-red-800{% else %}text-emerald-700{% endif %}">
+                                    {% if sem1_info.class_awarded == 'Failed' %}Failed{% else %}Passed{% endif %}
+                                </span>
+                                {% if sem1_info.class_awarded != 'Failed' %}
+                                    <span class="text-sm">({{ sem1_info.class_awarded }})</span>
+                                {% endif %}
+                            </p>
+                            <p>SGPA: <span class="font-bold text-lg">{{ sem1_info.sgpa if sem1_info.sgpa is not none else '--' }}</span></p>
+                        </div>
+                        {% endif %}
+
+                        {% if sem2_info %}
+                        <div class="p-4 rounded-lg {% if sem2_info.class_awarded == 'Failed' %} bg-red-50 text-red-700 print-bg-red {% else %} bg-blue-50 text-blue-700 print-bg-blue {% endif %}">
+                            <p class="font-semibold text-sm uppercase tracking-wide">{{ sem2_info.semester }}</p>
+                            <p class="mt-1">Status:
+                                <span class="font-bold {% if sem2_info.class_awarded == 'Failed' %}text-red-800{% else %}text-emerald-700{% endif %}">
+                                    {% if sem2_info.class_awarded == 'Failed' %}Failed{% else %}Passed{% endif %}
+                                </span>
+                                {% if sem2_info.class_awarded != 'Failed' %}
+                                    <span class="text-sm">({{ sem2_info.class_awarded }})</span>
+                                {% endif %}
+                            </p>
+                            <p>SGPA: <span class="font-bold text-lg">{{ sem2_info.sgpa if sem2_info.sgpa is not none else '--' }}</span></p>
+                        </div>
+                        {% endif %}
+
+                        {% if sem1_info and sem2_info and data.cgpa is defined %}
+                        <div class="p-4 rounded-lg {% if data.class_awarded == 'Failed' %} bg-red-50 text-red-700 print-bg-red {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                            <p class="font-semibold text-sm uppercase tracking-wide">Overall Result</p>
+                            <p class="mt-1">Status: <span class="font-bold">{{ data.class_awarded }}</span></p>
+                            <p>CGPA: <span class="font-bold text-lg">{{ data.cgpa if data.cgpa is not none else '--' }}</span></p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Earned Credits Card -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">Total Earned Credits</h2>
+                    <div class="space-y-4">
+                        {% set sem1_earned = sem1_info.earned_credits if sem1_info else 0 %}
+                        {% set sem2_earned = sem2_info.earned_credits if sem2_info else 0 %}
+                        {% set sem1_total_credits = sem1_info.total_credits if sem1_info else 0 %}
+                        {% set sem2_total_credits = sem2_info.total_credits if sem2_info else 0 %}
+                        {% set total_earned = sem1_earned + sem2_earned %}
+                        {% set total_possible = sem1_total_credits + sem2_total_credits %}
+                        {% set pass_credit_threshold = total_possible * 0.8 %} {# Example threshold: 80% credits needed, adjust as needed #}
+
+                        {% if sem1_info %}
+                        <div class="p-4 bg-blue-50 text-blue-700 rounded-lg print-bg-blue">
+                            <p class="font-semibold text-sm uppercase tracking-wide">{{ sem1_info.semester }} Credits</p>
+                            <p class="mt-1">Earned: <span class="font-bold text-lg">{{ sem1_earned }}</span> / {{ sem1_total_credits }}</p>
+                        </div>
+                        {% endif %}
+                        {% if sem2_info %}
+                        <div class="p-4 bg-blue-50 text-blue-700 rounded-lg print-bg-blue">
+                            <p class="font-semibold text-sm uppercase tracking-wide">{{ sem2_info.semester }} Credits</p>
+                            <p class="mt-1">Earned: <span class="font-bold text-lg">{{ sem2_earned }}</span> / {{ sem2_total_credits }}</p>
+                        </div>
+                        {% endif %}
+                        <div class="p-4 rounded-lg {% if total_earned < pass_credit_threshold %} bg-red-50 text-red-700 print-bg-red {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                             <p class="font-semibold text-sm uppercase tracking-wide">Total Credits</p>
+                            <p class="mt-1">Earned: <span class="font-bold text-lg">{{ total_earned }}</span> / {{ total_possible }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Special Status Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-10">
+
+            {% set semester_names = data.basic_info | map(attribute='semester') | list %}
+            {% set first_semester_name = semester_names[0] if semester_names|length > 0 else 'Semester 1' %}
+            {% set second_semester_name = semester_names[1] if semester_names|length > 1 else None %}
+
+            <!-- Backlog Status Card -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">1. Backlog Status</h2>
+                    <div class="space-y-4">
+                        {% set backlogs_sem1 = data.backlogs.first_sem|length if data.backlogs and data.backlogs.first_sem else 0 %}
+                        {% set backlogs_sem2 = data.backlogs.second_sem|length if data.backlogs and data.backlogs.second_sem else 0 %}
+                        {% set total_backlogs = data.backlogs.total if data.backlogs else 0 %}
+
+                        {% if backlogs_sem1 is not none %}
+                        <div class="p-4 rounded-lg {% if backlogs_sem1 > 0 %} bg-red-50 text-red-700 print-bg-red {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                            <h3 class="font-semibold">{{ first_semester_name }}</h3>
+                            <p class="text-sm mt-1">{% if backlogs_sem1 > 0 %}You have <span class="font-bold">{{ backlogs_sem1 }}</span> backlog subject(s).{% else %}No backlogs.{% endif %}</p>
+                            {% if backlogs_sem1 > 0 %}
+                                <ul class="list-disc list-inside text-sm mt-2 text-slate-600 space-y-1">
+                                    {% for subject in data.backlogs.first_sem %}<li>{{ subject.name }} ({{ subject.code }})</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if second_semester_name and backlogs_sem2 is not none %}
+                        <div class="p-4 rounded-lg {% if backlogs_sem2 > 0 %} bg-red-50 text-red-700 print-bg-red {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                            <h3 class="font-semibold">{{ second_semester_name }}</h3>
+                            <p class="text-sm mt-1">{% if backlogs_sem2 > 0 %}You have <span class="font-bold">{{ backlogs_sem2 }}</span> backlog subject(s).{% else %}No backlogs.{% endif %}</p>
+                            {% if backlogs_sem2 > 0 %}
+                                <ul class="list-disc list-inside text-sm mt-2 text-slate-600 space-y-1">
+                                    {% for subject in data.backlogs.second_sem %}<li>{{ subject.name }} ({{ subject.code }})</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="border-t-2 border-b-2 border-dotted border-slate-300 py-3 mt-4 text-center print-border-dotted">
+                            <p class="font-semibold {% if total_backlogs > 0 %}text-red-700{% else %}text-emerald-700{% endif %}">
+                                Total Backlogs: <span class="text-lg font-bold">{{ total_backlogs }}</span>
+                            </p>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-slate-100 text-slate-600 rounded-md text-xs italic flex items-start gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Backlogs are subjects with an <span class="font-semibold text-red-700">'F'</span> grade that need to be cleared in subsequent attempts.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grace Marks Card -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">2. Grace Marks Applied</h2>
+                    <div class="space-y-4">
+                        {% set grace_marks_sem1 = data.grace_marks.first_sem|length if data.grace_marks and data.grace_marks.first_sem else 0 %}
+                        {% set grace_marks_sem2 = data.grace_marks.second_sem|length if data.grace_marks and data.grace_marks.second_sem else 0 %}
+                        {% set total_grace_marks = data.grace_marks.total if data.grace_marks else 0 %}
+
+                        {% if grace_marks_sem1 is not none %}
+                        <div class="p-4 rounded-lg {% if grace_marks_sem1 > 0 %} bg-amber-50 text-amber-700 print-bg-yellow {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                            <h3 class="font-semibold">{{ first_semester_name }}</h3>
+                            <p class="text-sm mt-1">{% if grace_marks_sem1 > 0 %}Grace marks applied in <span class="font-bold">{{ grace_marks_sem1 }}</span> subject(s).{% else %}No grace marks applied.{% endif %}</p>
+                             {% if grace_marks_sem1 > 0 %}
+                                <ul class="list-disc list-inside text-sm mt-2 text-slate-600 space-y-1">
+                                    {% for subject in data.grace_marks.first_sem %}<li>{{ subject.name }} ({{ subject.code }})</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if second_semester_name and grace_marks_sem2 is not none %}
+                        <div class="p-4 rounded-lg {% if grace_marks_sem2 > 0 %} bg-amber-50 text-amber-700 print-bg-yellow {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                           <h3 class="font-semibold">{{ second_semester_name }}</h3>
+                            <p class="text-sm mt-1">{% if grace_marks_sem2 > 0 %}Grace marks applied in <span class="font-bold">{{ grace_marks_sem2 }}</span> subject(s).{% else %}No grace marks applied.{% endif %}</p>
+                             {% if grace_marks_sem2 > 0 %}
+                                <ul class="list-disc list-inside text-sm mt-2 text-slate-600 space-y-1">
+                                    {% for subject in data.grace_marks.second_sem %}<li>{{ subject.name }} ({{ subject.code }})</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="border-t-2 border-b-2 border-dotted border-slate-300 py-3 mt-4 text-center print-border-dotted">
+                            <p class="font-semibold {% if total_grace_marks > 0 %}text-amber-700{% else %}text-emerald-700{% endif %}">
+                                Total Subjects with Grace: <span class="text-lg font-bold">{{ total_grace_marks }}</span>
+                            </p>
+                        </div>
+
+                         <div class="mt-4 p-3 bg-slate-100 text-slate-600 rounded-md text-xs italic flex items-start gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Grace marks (#) are added to help pass subjects close to the threshold, as per university rules.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Condo Marks Card -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">3. Condo Marks Applied</h2>
+                    <div class="space-y-4">
+                        {% set condo_marks_sem1 = data.condo_marks.first_sem|length if data.condo_marks and data.condo_marks.first_sem else 0 %}
+                        {% set condo_marks_sem2 = data.condo_marks.second_sem|length if data.condo_marks and data.condo_marks.second_sem else 0 %}
+                        {% set total_condo_marks = data.condo_marks.total if data.condo_marks else 0 %}
+
+                         {% if condo_marks_sem1 is not none %}
+                        <div class="p-4 rounded-lg {% if condo_marks_sem1 > 0 %} bg-amber-50 text-amber-700 print-bg-yellow {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                            <h3 class="font-semibold">{{ first_semester_name }}</h3>
+                            <p class="text-sm mt-1">{% if condo_marks_sem1 > 0 %}Condonation applied in <span class="font-bold">{{ condo_marks_sem1 }}</span> subject(s).{% else %}No condonation applied.{% endif %}</p>
+                            {% if condo_marks_sem1 > 0 %}
+                                <ul class="list-disc list-inside text-sm mt-2 text-slate-600 space-y-1">
+                                    {% for subject in data.condo_marks.first_sem %}<li>{{ subject.name }} ({{ subject.code }})</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if second_semester_name and condo_marks_sem2 is not none %}
+                        <div class="p-4 rounded-lg {% if condo_marks_sem2 > 0 %} bg-amber-50 text-amber-700 print-bg-yellow {% else %} bg-emerald-50 text-emerald-700 print-bg-green {% endif %}">
+                            <h3 class="font-semibold">{{ second_semester_name }}</h3>
+                            <p class="text-sm mt-1">{% if condo_marks_sem2 > 0 %}Condonation applied in <span class="font-bold">{{ condo_marks_sem2 }}</span> subject(s).{% else %}No condonation applied.{% endif %}</p>
+                            {% if condo_marks_sem2 > 0 %}
+                                <ul class="list-disc list-inside text-sm mt-2 text-slate-600 space-y-1">
+                                    {% for subject in data.condo_marks.second_sem %}<li>{{ subject.name }} ({{ subject.code }})</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="border-t-2 border-b-2 border-dotted border-slate-300 py-3 mt-4 text-center print-border-dotted">
+                             <p class="font-semibold {% if total_condo_marks > 0 %}text-amber-700{% else %}text-emerald-700{% endif %}">
+                                Total Subjects with Condonation: <span class="text-lg font-bold">{{ total_condo_marks }}</span>
+                            </p>
+                        </div>
+
+                         <div class="mt-4 p-3 bg-slate-100 text-slate-600 rounded-md text-xs italic flex items-start gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Condonation marks ($) are applied based on specific university regulations, often related to attendance or minor shortfalls.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CGPA / SGPA to Percentage Card -->
+            {% set num_sems = data.basic_info|length %}
+             <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">
+                        4. {% if num_sems > 1 %}CGPA{% else %}SGPA{% endif %} Conversion
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-emerald-50 text-emerald-800 rounded-lg print-bg-green">
+                            {% if num_sems > 1 and data.cgpa is defined and data.percentage is defined and data.grade is defined and data.class_awarded is defined %}
+                                <h3 class="font-semibold uppercase text-sm tracking-wide mb-2">Overall Conversion</h3>
+                                <p class="text-sm">CGPA: <span class="font-bold text-base">{{ data.cgpa if data.cgpa is not none else 'N/A' }}</span></p>
+                                <p class="text-sm">Approx. Percentage: <span class="font-bold text-base">{{ data.percentage if data.percentage is not none else 'N/A' }}%</span></p>
+                                <p class="text-sm">Grade: <span class="font-bold text-base">{{ data.grade if data.grade else 'N/A' }}</span></p>
+                                <p class="text-sm">Class Awarded: <span class="font-bold text-base">{{ data.class_awarded if data.class_awarded else 'N/A' }}</span></p>
+                            {% elif num_sems == 1 and data.basic_info[0].sgpa is defined %}
+                                <h3 class="font-semibold uppercase text-sm tracking-wide mb-2">Semester Conversion</h3>
+                                {% set sem1_sgpa = data.basic_info[0].sgpa | float(0) %} {# Handle potential None #}
+                                <p class="text-sm">SGPA: <span class="font-bold text-base">{{ data.basic_info[0].sgpa if data.basic_info[0].sgpa is not none else 'N/A' }}</span></p>
+                                {% if sem1_sgpa %}
+                                    <p class="text-sm">Approx. Percentage: <span class="font-bold text-base">{{ (sem1_sgpa * 9.5) | round(2) }}%</span></p>
+                                {% else %}
+                                     <p class="text-sm">Approx. Percentage: <span class="font-bold text-base">N/A</span></p>
+                                {% endif %}
+                            {% else %}
+                                <p class="font-semibold text-red-600">Conversion data not available.</p>
+                            {% endif %}
+                        </div>
+
+                         <div class="mt-4 p-3 bg-slate-100 text-slate-600 rounded-md text-xs italic flex items-start gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Percentage is typically estimated using the formula:
+                                <span class="font-semibold">{% if num_sems > 1 %}CGPA{% else %}SGPA{% endif %} × 9.5</span>. University specific formulas may vary.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Semester 1 Subjects Table -->
+        {% if data.subject_table and sem1_info %}
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 sm:mb-10 card-hover print-card">
+            <div class="p-6">
+                 <h2 class="text-xl font-semibold text-slate-800 mb-4">{{ sem1_info.semester }} Subjects</h2>
+                 <div class="mb-5 p-4 bg-indigo-50 rounded-lg border border-indigo-200 text-indigo-800 space-y-1 text-sm">
+                    <p>SGPA: <span class="font-bold text-base">{{ sem1_info.sgpa if sem1_info.sgpa is not none else '--' }}</span></p>
+                    <p>Credits Earned: <span class="font-bold text-base">{{ sem1_info.earned_credits }} / {{ sem1_info.total_credits }}</span></p>
+                    <p>Total Credit Points: <span class="font-bold text-base">{{ sem1_info.total_credit_points }}</span></p>
+                 </div>
+
+                <!-- Search Input for Sem 1 -->
+                <div class="mb-4 relative no-print">
+                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <input type="text" id="searchSem1" placeholder="Search subjects by Name or Code..."
+                           class="block w-full p-3 pl-10 text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-500" id="sem1Table">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-200">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Code</th>
+                                <th scope="col" class="px-6 py-3">Name</th>
+                                <th scope="col" class="px-6 py-3 text-center">Credit</th>
+                                <th scope="col" class="px-6 py-3 text-center">Earned</th>
+                                <th scope="col" class="px-6 py-3 text-center">Grade (Point)</th>
+                                <th scope="col" class="px-6 py-3 text-center">Credit Point</th>
+                                <th scope="col" class="px-6 py-3">Marks Range</th>
+                            </tr>
+                        </thead>
+                        <tbody class="[&>*:nth-child(even)]:bg-slate-50">
+                            {% for subject in data.subject_table %}
+                            <tr class="bg-white border-b border-slate-200 hover:bg-indigo-50
+                                {% if subject.Grade == 'F' %} !bg-red-100 text-red-900 print-bg-red
+                                {% elif subject.CreditPoint and ('#' in subject.CreditPoint or '$' in subject.CreditPoint) %} !bg-amber-100 text-amber-900 print-bg-yellow
+                                {% endif %}
+                            ">
+                                <td class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{{ subject.SubCode }}</td>
+                                <td class="px-6 py-4">{{ subject.SubjectName }}</td>
+                                <td class="px-6 py-4 text-center">{{ subject.Credit if subject.Credit else '-' }}</td>
+                                <td class="px-6 py-4 text-center">{{ subject.EarnedCredit if subject.EarnedCredit else '-' }}</td>
+                                <td class="px-6 py-4 text-center font-medium">
+                                    {{ subject.Grade }}
+                                    {% if subject.GradePoint is not none %} ({{ subject.GradePoint }}) {% else %} (-) {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-center font-medium {% if subject.CreditPoint and '#' in subject.CreditPoint %} text-amber-700 {% elif subject.CreditPoint and '$' in subject.CreditPoint %} text-amber-700 {% endif %}">
+                                    {{ subject.CreditPoint if subject.CreditPoint else '-' }}
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-500">
+                                    {% if subject.Grade == 'O' %}80-100
+                                    {% elif subject.Grade == 'A+' %}70-79
+                                    {% elif subject.Grade == 'A' %}60-69
+                                    {% elif subject.Grade == 'B+' %}55-59
+                                    {% elif subject.Grade == 'B' %}50-54
+                                    {% elif subject.Grade == 'C' %}45-49
+                                    {% elif subject.Grade == 'P' %}40-44
+                                    {% elif subject.Grade == 'F' %}0-39
+                                    {% elif subject.Grade == 'Ab' %}Absent
+                                    {% else %}-
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Semester 2 Subjects Table -->
+        {% if data.second_semester_subjects and sem2_info %}
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 sm:mb-10 card-hover print-card">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-slate-800 mb-4">{{ sem2_info.semester }} Subjects</h2>
+                <div class="mb-5 p-4 bg-indigo-50 rounded-lg border border-indigo-200 text-indigo-800 space-y-1 text-sm">
+                    <p>SGPA: <span class="font-bold text-base">{{ sem2_info.sgpa if sem2_info.sgpa is not none else '--' }}</span></p>
+                    <p>Credits Earned: <span class="font-bold text-base">{{ sem2_info.earned_credits }} / {{ sem2_info.total_credits }}</span></p>
+                    <p>Total Credit Points: <span class="font-bold text-base">{{ sem2_info.total_credit_points }}</span></p>
+                </div>
+
+                <!-- Search Input for Sem 2 -->
+                 <div class="mb-4 relative no-print">
+                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <input type="text" id="searchSem2" placeholder="Search subjects by Name or Code..."
+                           class="block w-full p-3 pl-10 text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-500" id="sem2Table">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-200">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Code</th>
+                                <th scope="col" class="px-6 py-3">Name</th>
+                                <th scope="col" class="px-6 py-3 text-center">Credit</th>
+                                <th scope="col" class="px-6 py-3 text-center">Earned</th>
+                                <th scope="col" class="px-6 py-3 text-center">Grade (Point)</th>
+                                <th scope="col" class="px-6 py-3 text-center">Credit Point</th>
+                                <th scope="col" class="px-6 py-3">Marks Range</th>
+                            </tr>
+                        </thead>
+                         <tbody class="[&>*:nth-child(even)]:bg-slate-50">
+                            {% for subject in data.second_semester_subjects %}
+                             <tr class="bg-white border-b border-slate-200 hover:bg-indigo-50
+                                {% if subject.Grade == 'F' %} !bg-red-100 text-red-900 print-bg-red
+                                {% elif subject.CreditPoint and ('#' in subject.CreditPoint or '$' in subject.CreditPoint) %} !bg-amber-100 text-amber-900 print-bg-yellow
+                                {% endif %}
+                            ">
+                                <td class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{{ subject.SubCode }}</td>
+                                <td class="px-6 py-4">{{ subject.SubjectName }}</td>
+                                <td class="px-6 py-4 text-center">{{ subject.Credit if subject.Credit else '-' }}</td>
+                                <td class="px-6 py-4 text-center">{{ subject.EarnedCredit if subject.EarnedCredit else '-' }}</td>
+                                 <td class="px-6 py-4 text-center font-medium">
+                                    {{ subject.Grade }}
+                                    {% if subject.GradePoint is not none %} ({{ subject.GradePoint }}) {% else %} (-) {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-center font-medium {% if subject.CreditPoint and '#' in subject.CreditPoint %} text-amber-700 {% elif subject.CreditPoint and '$' in subject.CreditPoint %} text-amber-700 {% endif %}">
+                                    {{ subject.CreditPoint if subject.CreditPoint else '-' }}
+                                </td>
+                                 <td class="px-6 py-4 text-xs text-slate-500">
+                                    {% if subject.Grade == 'O' %}80-100
+                                    {% elif subject.Grade == 'A+' %}70-79
+                                    {% elif subject.Grade == 'A' %}60-69
+                                    {% elif subject.Grade == 'B+' %}55-59
+                                    {% elif subject.Grade == 'B' %}50-54
+                                    {% elif subject.Grade == 'C' %}45-49
+                                    {% elif subject.Grade == 'P' %}40-44
+                                    {% elif subject.Grade == 'F' %}0-39
+                                    {% elif subject.Grade == 'Ab' %}Absent
+                                    {% else %}-
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+
+        <!-- Grading System & CGPA Class Tables (Combined in Grid) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-10">
+            <!-- Grading System Table -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">5. Grading System</h2>
+                    <div class="overflow-x-auto">
+                         <table class="w-full text-sm text-left text-slate-500">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-200">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Marks Range</th>
+                                    <th scope="col" class="px-6 py-3">Grade</th>
+                                    <th scope="col" class="px-6 py-3">Description</th>
+                                    <th scope="col" class="px-6 py-3 text-center">Grade Point</th>
+                                </tr>
+                            </thead>
+                            <tbody class="[&>*:nth-child(even)]:bg-slate-50">
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">80-100</td><td class="px-6 py-3 font-medium text-slate-900">O</td><td class="px-6 py-3">Outstanding</td><td class="px-6 py-3 text-center font-medium">10</td></tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">70-79</td><td class="px-6 py-3 font-medium text-slate-900">A+</td><td class="px-6 py-3">Excellent</td><td class="px-6 py-3 text-center font-medium">9</td></tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">60-69</td><td class="px-6 py-3 font-medium text-slate-900">A</td><td class="px-6 py-3">Very Good</td><td class="px-6 py-3 text-center font-medium">8</td></tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">55-59</td><td class="px-6 py-3 font-medium text-slate-900">B+</td><td class="px-6 py-3">Good</td><td class="px-6 py-3 text-center font-medium">7</td></tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">50-54</td><td class="px-6 py-3 font-medium text-slate-900">B</td><td class="px-6 py-3">Above Average</td><td class="px-6 py-3 text-center font-medium">6</td></tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">45-49</td><td class="px-6 py-3 font-medium text-slate-900">C</td><td class="px-6 py-3">Average</td><td class="px-6 py-3 text-center font-medium">5</td></tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">40-44</td><td class="px-6 py-3 font-medium text-slate-900">P</td><td class="px-6 py-3">Pass</td><td class="px-6 py-3 text-center font-medium">4</td></tr>
+                                <tr class="bg-red-50 border-b border-slate-200 hover:bg-red-100 print-bg-red"><td class="px-6 py-3">0-39</td><td class="px-6 py-3 font-medium text-red-800">F</td><td class="px-6 py-3 text-red-800">Fail</td><td class="px-6 py-3 text-center font-medium text-red-800">0</td></tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50"><td class="px-6 py-3">-</td><td class="px-6 py-3 font-medium text-slate-900">Ab</td><td class="px-6 py-3">Absent</td><td class="px-6 py-3 text-center font-medium">0</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CGPA Class Awarded Table -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden card-hover print-card">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-5 border-b border-slate-200 pb-3">6. CGPA & Class Awarded</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-500">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-200">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">CGPA Range</th>
+                                    <th scope="col" class="px-6 py-3">Class Awarded</th>
+                                </tr>
+                            </thead>
+                            <tbody class="[&>*:nth-child(even)]:bg-slate-50">
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">≥ 7.75</td>
+                                    <td class="px-6 py-3 font-semibold text-emerald-700">First Class with Distinction</td>
+                                </tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">≥ 6.75 and < 7.75</td>
+                                    <td class="px-6 py-3 font-semibold text-emerald-600">First Class</td>
+                                </tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">≥ 6.25 and < 6.75</td>
+                                    <td class="px-6 py-3 font-semibold text-blue-600">Higher Second Class</td>
+                                </tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">≥ 5.5 and < 6.25</td>
+                                    <td class="px-6 py-3 font-semibold text-blue-500">Second Class</td>
+                                </tr>
+                                <tr class="bg-white border-b border-slate-200 hover:bg-slate-50">
+                                    <td class="px-6 py-3 font-medium text-slate-900">< 5.5 (All subjects Passed)</td>
+                                    <td class="px-6 py-3 font-semibold text-slate-600">Pass Class *</td>
+                                </tr>
+                                <tr class="bg-red-50 border-b border-slate-200 hover:bg-red-100 print-bg-red">
+                                    <td class="px-6 py-3 font-medium text-red-800">Any 'F' Grade</td>
+                                    <td class="px-6 py-3 font-semibold text-red-700">Failed</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                         <div class="mt-4 p-3 bg-slate-100 text-slate-600 rounded-md text-xs italic flex items-start gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                             <span>* Note: CGPA ranges and class definitions are based on common university practices and may vary. Always refer to official university regulations for precise details.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Action Buttons -->
+        <div class="text-center space-x-4 mt-10 no-print">
+             <a id="clearSessionButton" href="{{ url_for('processed.clear_session') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Clear & Start Over
+             </a>
+             <a id="backToTopButton" href="#top" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 11l7-7 7 7M5 19l7-7 7 7" /></svg>
+                Back to Top
+             </a>
+        </div>
+    </div>
+
+    <!-- Floating Print Button -->
+    <div class="print-btn no-print" onclick="window.print();" title="Print Results">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+    </div>
+
+    <!-- JavaScript for Table Search & Smooth Scroll -->
+    <script>
+    function searchTable(inputId, tableId) {
+        const input = document.getElementById(inputId);
+        const filter = input.value.toUpperCase().trim();
+        const table = document.getElementById(tableId);
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            let found = false;
+            // Search in Subject Code (index 0) and Subject Name (index 1)
+             if (cells[0] && cells[0].textContent.toUpperCase().includes(filter)) {
+                 found = true;
+             } else if (cells[1] && cells[1].textContent.toUpperCase().includes(filter)) {
+                 found = true;
+             }
+
+            rows[i].style.display = found ? '' : 'none';
+        }
+    }
+
+    const searchSem1Input = document.getElementById('searchSem1');
+    if (searchSem1Input) {
+        searchSem1Input.addEventListener('keyup', function() {
+            searchTable('searchSem1', 'sem1Table');
+        });
+    }
+
+    const searchSem2Input = document.getElementById('searchSem2');
+     if (searchSem2Input) {
+        searchSem2Input.addEventListener('keyup', function() {
+            searchTable('searchSem2', 'sem2Table');
+        });
+     }
+
+    // Smooth scroll for Back to Top
+     const backToTopButton = document.getElementById('backToTopButton');
+     if(backToTopButton) {
+        backToTopButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetElement = document.getElementById('top');
+            if (targetElement) {
+                 targetElement.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                // Fallback if #top isn't found
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+     }
+    </script>
+</body>
+</html>

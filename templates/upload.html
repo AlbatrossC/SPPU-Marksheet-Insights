@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPPU Marksheet Analyzer - Upload</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* bg-slate-100 */
+        }
+        /* Simple inline SVG spinner */
+        .spinner {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            border: .2em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spinner-border .75s linear infinite;
+            margin-left: 0.5rem; /* ml-2 */
+        }
+        @keyframes spinner-border {
+            to { transform: rotate(360deg); }
+        }
+        /* Style the file input button part */
+        input[type="file"]::file-selector-button {
+            margin-right: 1rem; /* mr-4 */
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem; /* px-4 py-2 */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 500; /* font-medium */
+            border-radius: 0.375rem; /* rounded-md */
+            border: 1px solid #cbd5e1; /* border-slate-300 */
+            background-color: white;
+            color: #334155; /* text-slate-700 */
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); /* shadow-sm */
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background-color: #f8fafc; /* hover:bg-slate-50 */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-700">
+
+    <div class="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+
+        <header class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">
+                SPPU Marksheet Analyzer
+            </h1>
+            <p class="text-base sm:text-lg text-slate-600 max-w-xl mx-auto">
+                Upload your Savitribai Phule Pune University (SPPU) marksheet PDF to easily extract and analyze your academic performance.
+            </p>
+        </header>
+
+        <!-- Flash Messages -->
+        <div class="flash-messages mb-8 space-y-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message p-4 rounded-md border flex items-start gap-3
+                            {% if category == 'error' %} bg-red-100 border-red-300 text-red-800
+                            {% elif category == 'info' %} bg-blue-100 border-blue-300 text-blue-800
+                            {% else %} bg-yellow-100 border-yellow-300 text-yellow-800 {% endif %}">
+                            {% if category == 'error' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                            {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                            {% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Upload Container -->
+        <div class="upload-container bg-white rounded-xl shadow-lg border-2 border-dashed border-indigo-300 p-6 sm:p-10 text-center mb-8">
+            <h2 class="text-xl sm:text-2xl font-semibold text-slate-800 mb-3">Upload Your Marksheet</h2>
+            <p class="text-slate-600 mb-6">Select or drop your SPPU marksheet PDF file here.</p>
+            <form method="POST" enctype="multipart/form-data" id="upload-form">
+                <div class="mb-6">
+                    <input type="file" name="file" id="file-input" accept=".pdf" required
+                           class="block w-full text-sm text-slate-500 cursor-pointer focus:outline-none"
+                           aria-label="Upload PDF marksheet">
+                </div>
+                <button type="submit" id="submit-btn"
+                        class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Process PDF</span>
+                    <!-- Spinner placeholder added via JS -->
+                </button>
+            </form>
+        </div>
+
+        <!-- Privacy Note -->
+        <div class="privacy-note bg-slate-50 border border-slate-200 text-slate-600 rounded-lg p-4 text-center text-sm mb-8 flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 00-1-1H9a1 1 0 000 2h1a1 1 0 001-1z" clip-rule="evenodd" />
+            </svg>
+            <strong>Privacy Assured:</strong> Your PDF is processed temporarily and securely, never stored on our servers.
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-emerald-900 mb-4">How it Works:</h3>
+            <ul class="space-y-2 text-sm">
+                <li class="flex items-start gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                    <span>Ensure you upload a **PDF file** of your official SPPU marksheet.</span>
+                </li>
+                 <li class="flex items-start gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                    <span>The PDF must be clear and readable for accurate data extraction.</span>
+                </li>
+                 <li class="flex items-start gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                    <span>After processing, you'll see a detailed analysis and options to download as JSON or Excel (XLSX).</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- GitHub Link -->
+        <div class="github-link text-center mb-10">
+            <a href="https://github.com/your-repo/sppu-marksheet-analyzer" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2 text-slate-600 hover:text-indigo-700 hover:underline transition duration-150 ease-in-out"
+               aria-label="View source code on GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+                </svg>
+                <span>View Source on GitHub</span>
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-sm text-slate-500">
+            <p>Built with
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block text-red-500 -mt-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                </svg>
+                for the SPPU student community.
+            </p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submit-btn');
+            const fileInput = document.getElementById('file-input');
+
+            // Basic check if a file is selected
+            if (!fileInput.files || fileInput.files.length === 0) {
+                // Optionally add a more visible error message near the input
+                alert('Please select a PDF file to upload.');
+                e.preventDefault(); // Prevent form submission
+                return;
+            }
+
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            // Add spinner SVG dynamically
+            const spinnerSpan = document.createElement('span');
+            spinnerSpan.className = 'spinner'; // Use the CSS class for the spinner
+            spinnerSpan.setAttribute('role', 'status');
+            spinnerSpan.setAttribute('aria-hidden', 'true');
+
+            // Clear existing text content and append new text + spinner
+            submitBtn.innerHTML = ''; // Clear existing content
+            const textSpan = document.createElement('span');
+            textSpan.textContent = 'Processing...';
+            submitBtn.appendChild(textSpan);
+            submitBtn.appendChild(spinnerSpan);
+        });
+    </script>
+</body>
+</html>
