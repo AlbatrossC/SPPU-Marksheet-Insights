@@ -1,27 +1,27 @@
-# Use an official Python image
+# Base image with Python
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Install system dependencies (for pdftotext)
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install poppler-utils and other system dependencies
-RUN apt-get update && \
-    apt-get install -y poppler-utils && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Create a working directory
+# Set work directory
 WORKDIR /app
 
-# Copy your application code
-COPY . /app
+# Copy all project files into the container
+COPY . .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir flask werkzeug
+# Install Python dependencies from requirements.txt
+RUN pip install -r requirements.txt
 
-# Expose the port Flask runs on
+# Expose the port Flask will run on
 EXPOSE 5000
 
-# Run the application
-CMD ["python", "app.py"]
+# Set environment variables
+ENV FLASK_APP=app
+ENV FLASK_RUN_HOST=0.0.0.0
+
+# Run the Flask app
+CMD ["flask", "run"]
